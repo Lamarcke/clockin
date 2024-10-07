@@ -1,2 +1,2 @@
 # clockin
-A facial recognition based time clock app
+A facial recognition based electronic punch clock app
