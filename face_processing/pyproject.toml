@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "clockin-face-processing"
+version = "0.1.0"
+description = "Face Processing API for ClockIn"
+authors = ["Lamarcke <cassiolamarcksilvafreitas@gmail.com>"]
+license = "GNU General Public License v3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = {extras = ["standard"], version = "^0.115.0"}
+sqlmodel = "^0.0.22"
+deepface = "^0.0.93"
+python-dotenv = "^1.0.1"
+pymysql = {extras = ["rsa"], version = "^1.1.1"}
+python-multipart = "^0.0.12"
+tf-keras = "^2.17.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
