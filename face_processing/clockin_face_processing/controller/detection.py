@@ -18,7 +18,7 @@ async def create_representation(
     Searches for faces in a employee picture, and store the result for later processing.
     :return:
     """
-    return await detection_service.detect_faces(detection_dto)
+    return await detection_service.create_face_representation(detection_dto)
 
 
 @router.post("/match")
@@ -27,3 +27,17 @@ async def find_match(
     detection_service: DetectionService = Depends(),
 ):
     return await detection_service.find_match(match_dto)
+
+
+@router.post("/detect")
+async def detect_faces(
+    picture: UploadFile, detection_service: DetectionService = Depends()
+):
+    return await detection_service.detect_faces(picture)
+
+
+@router.post("/analyze")
+async def analyze_faces(
+    picture: UploadFile, detection_service: DetectionService = Depends()
+):
+    return await detection_service.analyze_faces(picture)
