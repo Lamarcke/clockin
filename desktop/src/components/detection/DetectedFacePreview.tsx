@@ -22,7 +22,7 @@ const DetectedFacePreview = ({ detectedFace }: Props) => {
     }
 
     return (
-        <AspectRatio ratio={16 / 9} w={"100%"}>
+        <AspectRatio ratio={16 / 9} w={"100%"} h={"100%"}>
             <img src={imageDataURL} ref={imgRef} style={{}} />
         </AspectRatio>
     );

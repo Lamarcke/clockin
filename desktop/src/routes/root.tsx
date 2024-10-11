@@ -9,32 +9,21 @@ import {blobToBase64} from "../util/image/blobToBase64.ts";
 import DetectedFacePreview from "../components/detection/DetectedFacePreview.tsx";
 import {DetectMatchResponse} from "../util/types.ts";
 import DetectedMatchPreview from "../components/detection/DetectedMatchPreview.tsx";
+import {notifications} from "@mantine/notifications";
+import {useMatchFaceMutation} from "../components/detection/hooks/useMatchFaceMutation.ts";
 
 export default function RootPage() {
     const [detectedFaceImage, setDetectedFaceImage] = useState<Blob | undefined>(undefined);
     const [matchResponse, setMatchResponse] = useState<DetectMatchResponse | undefined>(undefined);
 
-    const matchFaceMutation = useMutation({
-        mutationFn: async (image: Blob) => {
-            const formData = new FormData();
-            formData.append("picture", image);
-
-            const req = await fetch(`${API_BASE_PATH}/detection/match`, {
-                method: "POST",
-                body: formData,
-            });
-
-            const json: DetectMatchResponse = await req.json();
-
-            if (json.hasOwnProperty("detail")){
-                throw new Error("Failed to match!")
-            }
-
-            return json;
-        },
+    const matchFaceMutation = useMatchFaceMutation({
         onSuccess: (resp) => {
             console.log("Success on match: ", resp)
             setMatchResponse(resp)
+            notifications.show({
+                message: "Match found! Please confirm to proceed.",
+                color: "green",
+            })
         },
         onError: (err) => {
             console.error("Failed to match: ", err)
@@ -75,11 +64,9 @@ export default function RootPage() {
 
     return (
         <Stack w={"100%"} mih={"100vh"} align={"start"}>
-            <Center>
-                <Title>ClockIn</Title>
-            </Center>
-            <Group mt={"md"} wrap={"nowrap"} w={"100%"} align={"start"}>
-                <Group miw={"60%"} w={"60%"} pos={"relative"}>
+
+            <Group mt={"xs"} wrap={"nowrap"} w={"100%"} align={"start"}>
+                <Group miw={"50%"} w={"50%"} pos={"relative"}>
                     <LoadingOverlay visible={matchFaceMutation.isPending} />
                     <FaceVideoFeed
                         isDetectionPaused={isDetectionPaused}
@@ -96,8 +83,7 @@ export default function RootPage() {
                     borderRadius: "5px",
                     borderStyle: "solid"
                 }}>
-                    {detectedFaceImage && <DetectedFacePreview detectedFace={detectedFaceImage}/>}
-                    {matchResponse &&  <DetectedMatchPreview matchResponse={matchResponse}/>}
+                    {matchResponse && <Box h={"auto"} w={"15vw"} ><DetectedMatchPreview matchResponse={matchResponse}/></Box> }
                 </Stack>
 
             </Group>

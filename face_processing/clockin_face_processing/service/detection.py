@@ -34,6 +34,10 @@ class DetectionService:
     __DETECTOR_BACKEND = "retinaface"
     __FAST_DETECTOR_BACKEND = "opencv"
     __MIN_IMAGE_SIZES = {"h": 350, "w": 350}
+    __PREFERRED_IMAGE_EXTENSION = "png"
+
+    def __get_face_image_path(self, user_id: int):
+        return f"{get_uploads_root_path()}/face_{user_id}.${self.__PREFERRED_IMAGE_EXTENSION}"
 
     def __validate_image_size(self, file_path: str):
         img = cv2.imread(file_path)
@@ -80,21 +84,21 @@ class DetectionService:
             extracted_faces = DeepFace.extract_faces(
                 f.name, detector_backend=self.__FAST_DETECTOR_BACKEND
             )
-            first_extracted_face = extracted_faces[0]
-            first_facial_area: Dict[str, Any] = first_extracted_face.get("facial_area")
-
-            x = first_facial_area.get("x")
-            y = first_facial_area.get("y")
-            w = first_facial_area.get("w")
-            h = first_facial_area.get("h")
 
             img = cv2.imread(f.name)
 
-            img_with_box = cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            for face in extracted_faces:
+                facial_area: Dict[str, Any] = face.get("facial_area")
+                x = facial_area.get("x")
+                y = facial_area.get("y")
+                w = facial_area.get("w")
+                h = facial_area.get("h")
+                # Adds a outlined rectangle to the image
+                img = cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-            temp_save_bytes, temp_save_dest = tempfile.mkstemp(suffix=".png")
+            temp_save_bytes, temp_save_dest = tempfile.mkstemp(suffix=f".{self.__PREFERRED_IMAGE_EXTENSION}")
 
-            cv2.imwrite(temp_save_dest, img_with_box)
+            cv2.imwrite(temp_save_dest, img)
 
             return temp_save_dest, FileResponse(temp_save_dest)
 
@@ -132,10 +136,9 @@ class DetectionService:
                 session.commit()
 
             file_extension = mimetypes.guess_extension(uploaded_picture.content_type)
-            save_path = f"{get_uploads_root_path()}/face_{dto.user_id}.png"
+            save_path = self.__get_face_image_path(dto.user_id)
 
             facial_area = representation.get("facial_area")
-
 
             x = facial_area.get("x")
             y = facial_area.get("y")

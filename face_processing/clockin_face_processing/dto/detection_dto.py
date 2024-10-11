@@ -15,3 +15,7 @@ class FindDetectionMatchDto(BaseModel):
     picture: Annotated[UploadFile, File()] = File(
         ..., description="Employee's picture with a face visible"
     )
+
+class FindDetectionMatchResponseDto(BaseModel):
+    user_id: str
+    file_path: str
