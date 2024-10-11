@@ -1,6 +1,6 @@
 import React from 'react';
 import {DetectMatchResponse} from "../../util/types.ts";
-import {Image, Stack} from "@mantine/core";
+import {AspectRatio, Image, Stack} from "@mantine/core";
 import {getUploadedImageURL} from "../../util/image/getUploadedImageURL.ts";
 
 interface Props {
@@ -9,10 +9,9 @@ interface Props {
 
 const DetectedMatchPreview = ({matchResponse}: Props) => {
     return (
-        <Stack w={"100%"}>
+        <AspectRatio ratio={9 / 16} w={"100%"}>
             <Image src={getUploadedImageURL(`face_${matchResponse.user_id}.png`)}  />
-
-        </Stack>
+        </AspectRatio>
     );
 };
 
