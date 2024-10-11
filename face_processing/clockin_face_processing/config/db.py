@@ -8,7 +8,7 @@ from ..dao import models
 
 class DatabaseSettings(BaseSettings):
     url: str = Field(
-        "mysql+pymysql://face_processing:face_processing@localhost:3306/face_processing",
+        "sqlite:///face_processing.db",
         env="DB_URL",
     )
 

@@ -1,7 +1,8 @@
 import base64
+import os
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, UploadFile, File, Form
+from fastapi import APIRouter, Depends, UploadFile, File, Form, BackgroundTasks
 
 from ..dto.detection_dto import CreateDetectionDto, FindDetectionMatchDto
 from ..service.detection import DetectionService
@@ -9,7 +10,11 @@ from ..service.detection import DetectionService
 router = APIRouter(prefix="/detection", tags=["detection"])
 
 
-@router.post("")
+def __cleanup_temp_file(path: str):
+    return os.unlink(path)
+
+
+@router.post("", status_code=201)
 async def create_representation(
     detection_dto: Annotated[CreateDetectionDto, Form()],
     detection_service: DetectionService = Depends(),
@@ -18,6 +23,7 @@ async def create_representation(
     Searches for faces in a employee picture, and store the result for later processing.
     :return:
     """
+
     return await detection_service.create_face_representation(detection_dto)
 
 
@@ -31,9 +37,15 @@ async def find_match(
 
 @router.post("/detect")
 async def detect_faces(
-    picture: UploadFile, detection_service: DetectionService = Depends()
+    picture: UploadFile,
+    background_tasks: BackgroundTasks,
+    detection_service: DetectionService = Depends(),
 ):
-    return await detection_service.detect_faces(picture)
+    temp_file_path, response = await detection_service.detect_faces(picture)
+
+    background_tasks.add_task(__cleanup_temp_file, temp_file_path)
+
+    return response
 
 
 @router.post("/analyze")

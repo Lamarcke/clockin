@@ -2,62 +2,73 @@ import React, { useEffect, useRef } from "react";
 import { AspectRatio, Box } from "@mantine/core";
 
 interface Props {
+    isDetectionPaused: boolean;
     detectionInterval: number;
     detectFaces: (imageDataURL: string) => void | Promise<void>;
 }
 
-const FaceVideoFeed = ({ detectFaces, detectionInterval }: Props) => {
+const FaceVideoFeed = ({ isDetectionPaused, detectFaces, detectionInterval }: Props) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     const handleCanvasUpdate = () => {
-        if (canvasRef.current && videoRef.current) {
+        if (videoRef.current && canvasRef.current) {
             const ctx = canvasRef.current.getContext("2d");
-            ctx?.drawImage(videoRef.current, 0, 0, videoRef.current.width, videoRef.current.height);
+            ctx?.drawImage(videoRef.current, 0, 0, videoRef.current.videoWidth, videoRef.current.videoHeight);
         }
 
         requestAnimationFrame(handleCanvasUpdate);
     };
 
+    const handleDetectFaces = () => {
+        if (!videoRef.current || !canvasRef.current) return;
+
+        const image = canvasRef.current.toDataURL("image/jpeg");
+
+        detectFaces(image);
+    };
+
     useEffect(() => {
-        let interval: number | undefined = undefined;
         navigator.mediaDevices
             .getUserMedia({
                 video: {
                     facingMode: "user",
-                    height: 480,
+                    height: 640,
                     width: 960,
                 },
             })
             .then((stream) => {
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
-                    videoRef.current.play();
                     handleCanvasUpdate();
-                    interval = setInterval(() => {
-                        const image = canvasRef.current!.toDataURL("image/jpeg");
-                        detectFaces(image);
-                    }, detectionInterval);
                 }
             });
+    }, []);
+
+    useEffect(() => {
+        const interval: number | undefined = setInterval(() => {
+            if (isDetectionPaused) return;
+            handleDetectFaces();
+        }, detectionInterval);
 
         return () => {
             if (interval) {
                 clearInterval(interval);
             }
         };
-    }, []);
+    }, [isDetectionPaused]);
 
     return (
         <Box w={"100%"}>
-            <canvas ref={canvasRef} style={{ display: "none" }}></canvas>
+            <canvas ref={canvasRef} height={960} width={1280} style={{ display: "none" }}></canvas>
             <video
                 ref={videoRef}
+                autoPlay
                 style={{
                     maxHeight: "100%",
                     maxWidth: "100%",
                 }}
-            ></video>
+            />
         </Box>
     );
 };

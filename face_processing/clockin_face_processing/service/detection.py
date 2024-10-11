@@ -1,10 +1,11 @@
 import base64
 import io
 import json
+import mimetypes
 import os.path
 import tempfile
 from http import HTTPStatus
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from fastapi import UploadFile, HTTPException, File
 from pathlib import Path
@@ -14,7 +15,7 @@ import cv2
 from sqlmodel import select
 from starlette.responses import FileResponse
 
-from ..config import db_engine, get_db_session
+from ..config import db_engine, get_db_session, get_uploads_root_path
 from deepface import DeepFace
 
 from ..config import get_project_root
@@ -62,7 +63,7 @@ class DetectionService:
             enforce_detection=True,
         )[0]
 
-    async def detect_faces(self, picture: UploadFile):
+    async def detect_faces(self, picture: UploadFile) -> Tuple[str, FileResponse]:
         """
 
         :param picture:
@@ -95,26 +96,59 @@ class DetectionService:
 
             cv2.imwrite(temp_save_dest, img_with_box)
 
-            return FileResponse(temp_save_dest)
+            return temp_save_dest, FileResponse(temp_save_dest)
 
     async def create_face_representation(self, dto: CreateDetectionDto):
         uploaded_picture = dto.picture
+
         representation: dict[str, Any]
-        with tempfile.NamedTemporaryFile() as f:
-            f.write(uploaded_picture.file.read())
+        with tempfile.NamedTemporaryFile() as tf:
+            tf.write(uploaded_picture.file.read())
 
-            self.__validate_image_size(f.name)
+            self.__validate_image_size(tf.name)
 
-            representation = self.__get_facial_representation(f.name)
+            representation = self.__get_facial_representation(tf.name)
 
-        with get_db_session() as session:
-            face_representation = FaceRepresentation(
-                **dto.model_dump(),
-                embedding=representation.get("embedding"),
-                model_name=self.__MODEL_NAME
-            )
-            session.add(face_representation)
-            session.commit()
+            with get_db_session() as session:
+                statement = select(FaceRepresentation).where(
+                    FaceRepresentation.user_id == dto.user_id
+                )
+
+                result = session.exec(statement).one_or_none()
+
+                face_representation: FaceRepresentation
+                if result:
+                    face_representation = result
+                    face_representation.embedding = representation.get("embedding")
+                    face_representation.model_name = self.__MODEL_NAME
+                else:
+                    face_representation = FaceRepresentation(
+                        user_id=dto.user_id,
+                        embedding=representation.get("embedding"),
+                        model_name=self.__MODEL_NAME,
+                    )
+
+                session.add(face_representation)
+                session.commit()
+
+            file_extension = mimetypes.guess_extension(uploaded_picture.content_type)
+            save_path = f"{get_uploads_root_path()}/face_{dto.user_id}{file_extension}"
+
+            facial_area = representation.get("facial_area")
+
+            x = facial_area.get("x")
+            y = facial_area.get("y")
+            w = facial_area.get("w")
+            h = facial_area.get("h")
+
+            with open(save_path, "w+"):
+                img = cv2.imread(tf.name)
+
+                img_with_box = cv2.rectangle(
+                    img, (x, y), (x + w, y + h), (0, 255, 0), 3
+                )
+
+                cv2.imwrite(save_path, img_with_box)
 
     async def find_match(self, match_dto: FindDetectionMatchDto):
         uploaded_file = match_dto.picture
@@ -129,9 +163,7 @@ class DetectionService:
         file_embedding = uploaded_face_representation.get("embedding")
 
         with get_db_session() as session:
-            statement = select(FaceRepresentation).where(
-                FaceRepresentation.company_id == match_dto.company_id
-            )
+            statement = select(FaceRepresentation)
             results = session.execute(statement)
 
             # TODO: check if Celery tasks are applicable here.
