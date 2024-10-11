@@ -33,7 +33,7 @@ class DetectionService:
     __MODEL_NAME = "Facenet512"
     __DETECTOR_BACKEND = "retinaface"
     __FAST_DETECTOR_BACKEND = "opencv"
-    __MIN_IMAGE_SIZES = {"h": 400, "w": 400}
+    __MIN_IMAGE_SIZES = {"h": 350, "w": 350}
 
     def __validate_image_size(self, file_path: str):
         img = cv2.imread(file_path)
@@ -47,7 +47,7 @@ class DetectionService:
         ):
             raise HTTPException(
                 400,
-                "Image resolution is too small. Please upload a image with at least 400x400 pixels.",
+                "Image resolution is too small. Please upload a image with at least 350x350 pixels.",
             )
 
     def __get_facial_representation(self, file_path: str):
@@ -92,7 +92,7 @@ class DetectionService:
 
             img_with_box = cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-            temp_save_bytes, temp_save_dest = tempfile.mkstemp(suffix=".jpg")
+            temp_save_bytes, temp_save_dest = tempfile.mkstemp(suffix=".png")
 
             cv2.imwrite(temp_save_dest, img_with_box)
 
@@ -132,9 +132,10 @@ class DetectionService:
                 session.commit()
 
             file_extension = mimetypes.guess_extension(uploaded_picture.content_type)
-            save_path = f"{get_uploads_root_path()}/face_{dto.user_id}{file_extension}"
+            save_path = f"{get_uploads_root_path()}/face_{dto.user_id}.png"
 
             facial_area = representation.get("facial_area")
+
 
             x = facial_area.get("x")
             y = facial_area.get("y")

@@ -1,16 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useState} from "react";
 
-import { Box, Center, Group, Stack, Title } from "@mantine/core";
+import {Box, Center, Group, Stack, Title} from "@mantine/core";
 import FaceVideoFeed from "../components/video/FaceVideoFeed.tsx";
-import { useMutation } from "@tanstack/react-query";
-import { base64ToFile } from "../util/image/base64ToFile.ts";
-import { API_BASE_PATH } from "../util/constants.ts";
-import { blobToBase64 } from "../util/image/blobToBase64.ts";
+import {useMutation} from "@tanstack/react-query";
+import {base64ToFile} from "../util/image/base64ToFile.ts";
+import {API_BASE_PATH} from "../util/constants.ts";
+import {blobToBase64} from "../util/image/blobToBase64.ts";
 import DetectedFacePreview from "../components/detection/DetectedFacePreview.tsx";
+import {DetectMatchResponse} from "../util/types.ts";
+import DetectedMatchPreview from "../components/detection/DetectedMatchPreview.tsx";
 
 export default function RootPage() {
     const [detectedFaceImage, setDetectedFaceImage] = useState<Blob | undefined>(undefined);
-    const [matchedFaceImage, setMatchedFaceImage] = useState<Blob | undefined>(undefined);
+    const [matchResponse, setMatchResponse] = useState<DetectMatchResponse | undefined>(undefined);
 
     const matchFaceMutation = useMutation({
         mutationFn: async (image: Blob) => {
@@ -22,14 +24,23 @@ export default function RootPage() {
                 body: formData,
             });
 
-            const json = await req.json();
-            console.log(json);
+            const json: DetectMatchResponse = await req.json();
 
-            return image;
+            if (json.hasOwnProperty("detail")){
+                throw new Error("Failed to match!")
+            }
+
+            return json;
         },
-        onSuccess: (image) => {
-            setMatchedFaceImage(image);
+        onSuccess: (resp) => {
+            console.log("Success on match: ", resp)
+            setMatchResponse(resp)
         },
+        onError: (err) => {
+            console.error("Failed to match: ", err)
+            setDetectedFaceImage(undefined)
+            setMatchResponse(undefined)
+        }
     });
 
     const detectFacesMutation = useMutation({
@@ -60,28 +71,35 @@ export default function RootPage() {
 
     const isPending = detectFacesMutation.isPending || matchFaceMutation.isPending;
 
-    const isDetectionPaused = isPending || detectedFaceImage != undefined || matchedFaceImage != undefined;
+    const isDetectionPaused = detectedFaceImage != undefined || matchResponse != undefined;
 
     return (
-        <Stack w={"100%"} mih={"100vh"}>
+        <Stack w={"100%"} mih={"100vh"} align={"start"}>
             <Center>
                 <Title>ClockIn</Title>
             </Center>
-            <Group mt={"md"} wrap={"nowrap"}>
-                <Group w={"60%"} maw={960} mah={480}>
-                    {detectedFaceImage ? (
-                        <DetectedFacePreview detectedFace={detectedFaceImage} />
-                    ) : (
-                        <FaceVideoFeed
-                            isDetectionPaused={isDetectionPaused}
-                            detectionInterval={3000}
-                            detectFaces={async (dataURL) => {
-                                const image = await base64ToFile(dataURL, new Date().toString());
-                                detectFacesMutation.mutate(image);
-                            }}
-                        />
-                    )}
+            <Group mt={"md"} wrap={"nowrap"} w={"100%"} align={"start"}>
+                <Group miw={"60%"} w={"60%"} mah={640}>
+
+                    <FaceVideoFeed
+                        isDetectionPaused={isDetectionPaused}
+                        detectionInterval={3000}
+                        detectFaces={async (dataURL) => {
+                            const image = await base64ToFile(dataURL, new Date().toString());
+                            detectFacesMutation.mutate(image);
+                        }}
+                    />
                 </Group>
+                <Stack mih={"100%"} miw={"35%"} p={"md"} w={"100%"} style={{
+                    borderColor: "darkgray",
+                    borderWidth: "2px",
+                    borderRadius: "5px",
+                    borderStyle: "solid"
+                }}>
+                    {detectedFaceImage && <DetectedFacePreview detectedFace={detectedFaceImage}/>}
+                    {matchResponse &&  <DetectedMatchPreview matchResponse={matchResponse}/>}
+                </Stack>
+
             </Group>
             {isIdle && <Title mt={"md"}>Waiting...</Title>}
             {detectFacesMutation.isPending && <Title mt={"md"}>Detecting faces...</Title>}

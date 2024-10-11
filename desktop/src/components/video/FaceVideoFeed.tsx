@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { AspectRatio, Box } from "@mantine/core";
+import {AspectRatio, Box, Center} from "@mantine/core";
 
 interface Props {
     isDetectionPaused: boolean;
@@ -59,7 +59,7 @@ const FaceVideoFeed = ({ isDetectionPaused, detectFaces, detectionInterval }: Pr
     }, [isDetectionPaused]);
 
     return (
-        <Box w={"100%"}>
+        <Center w={"100%"}>
             <canvas ref={canvasRef} height={960} width={1280} style={{ display: "none" }}></canvas>
             <video
                 ref={videoRef}
@@ -69,7 +69,7 @@ const FaceVideoFeed = ({ isDetectionPaused, detectFaces, detectionInterval }: Pr
                     maxWidth: "100%",
                 }}
             />
-        </Box>
+        </Center>
     );
 };
 
