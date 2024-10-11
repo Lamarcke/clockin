@@ -43,8 +43,6 @@ class DetectionService:
         img = cv2.imread(file_path)
         img_h, img_w, img_c = img.shape
 
-        print("")
-
         if (
             self.__MIN_IMAGE_SIZES.get("h") > img_h
             or self.__MIN_IMAGE_SIZES.get("w") > img_w
@@ -86,6 +84,7 @@ class DetectionService:
             )
 
             img = cv2.imread(f.name)
+            img_with_boxes = img.copy()
 
             for face in extracted_faces:
                 facial_area: Dict[str, Any] = face.get("facial_area")
@@ -94,11 +93,11 @@ class DetectionService:
                 w = facial_area.get("w")
                 h = facial_area.get("h")
                 # Adds a outlined rectangle to the image
-                img = cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                img_with_boxes = cv2.rectangle(img_with_boxes, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
             temp_save_bytes, temp_save_dest = tempfile.mkstemp(suffix=f".{self.__PREFERRED_IMAGE_EXTENSION}")
 
-            cv2.imwrite(temp_save_dest, img)
+            cv2.imwrite(temp_save_dest, img_with_boxes)
 
             return temp_save_dest, FileResponse(temp_save_dest)
 

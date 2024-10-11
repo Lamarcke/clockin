@@ -5,13 +5,14 @@ from starlette.responses import JSONResponse
 from starlette.staticfiles import StaticFiles
 
 from clockin_face_processing.config.db import create_engine_metadata
-from clockin_face_processing.controller import detection
+from clockin_face_processing.controller import detection, user
 from sqlalchemy.exc import IntegrityError
 
 
 app = FastAPI()
 
 app.include_router(detection.router)
+app.include_router(user.router)
 
 app.add_middleware(
     CORSMiddleware,
