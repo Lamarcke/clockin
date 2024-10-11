@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
 
-import {Box, Center, Group, Stack, Title} from "@mantine/core";
+import {Box, Center, Group, LoadingOverlay, Stack, Title} from "@mantine/core";
 import FaceVideoFeed from "../components/video/FaceVideoFeed.tsx";
 import {useMutation} from "@tanstack/react-query";
 import {base64ToFile} from "../util/image/base64ToFile.ts";
@@ -71,7 +71,7 @@ export default function RootPage() {
 
     const isPending = detectFacesMutation.isPending || matchFaceMutation.isPending;
 
-    const isDetectionPaused = detectedFaceImage != undefined || matchResponse != undefined;
+    const isDetectionPaused = isPending || detectedFaceImage != undefined || matchResponse != undefined;
 
     return (
         <Stack w={"100%"} mih={"100vh"} align={"start"}>
@@ -79,18 +79,18 @@ export default function RootPage() {
                 <Title>ClockIn</Title>
             </Center>
             <Group mt={"md"} wrap={"nowrap"} w={"100%"} align={"start"}>
-                <Group miw={"60%"} w={"60%"} mah={640}>
-
+                <Group miw={"60%"} w={"60%"} pos={"relative"}>
+                    <LoadingOverlay visible={matchFaceMutation.isPending} />
                     <FaceVideoFeed
                         isDetectionPaused={isDetectionPaused}
-                        detectionInterval={3000}
+                        detectionInterval={1000}
                         detectFaces={async (dataURL) => {
                             const image = await base64ToFile(dataURL, new Date().toString());
                             detectFacesMutation.mutate(image);
                         }}
                     />
                 </Group>
-                <Stack mih={"100%"} miw={"35%"} p={"md"} w={"100%"} style={{
+                <Stack mih={"100%"} miw={"35%"} p={"md"} w={"100%"} me={"sm"} style={{
                     borderColor: "darkgray",
                     borderWidth: "2px",
                     borderRadius: "5px",
@@ -101,8 +101,7 @@ export default function RootPage() {
                 </Stack>
 
             </Group>
-            {isIdle && <Title mt={"md"}>Waiting...</Title>}
-            {detectFacesMutation.isPending && <Title mt={"md"}>Detecting faces...</Title>}
+            {detectFacesMutation.isPending && <Title mt={"md"}>Calculating faces...</Title>}
             {matchFaceMutation.isPending && <Title mt={"md"}>Matching face... this may take a while.</Title>}
         </Stack>
     );

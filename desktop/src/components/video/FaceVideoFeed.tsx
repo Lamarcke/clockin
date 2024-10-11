@@ -67,6 +67,7 @@ const FaceVideoFeed = ({ isDetectionPaused, detectFaces, detectionInterval }: Pr
                 style={{
                     maxHeight: "100%",
                     maxWidth: "100%",
+                    minWidth: "100%"
                 }}
             />
         </Center>
