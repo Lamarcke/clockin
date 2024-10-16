@@ -7,9 +7,11 @@ import { MantineProvider } from "@mantine/core";
 // Import styles of packages that you've installed.
 // All packages except `@mantine/hooks` require styles imports
 import "@mantine/core/styles.css";
-import "@mantine/notifications/styles.css"
+import "@mantine/notifications/styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {Notifications} from "@mantine/notifications";
+import { Notifications } from "@mantine/notifications";
+import AdminPage from "./routes/adminPage.tsx";
+import UserInfoPage from "./routes/UserInfoPage.tsx";
 
 function App() {
     const [queryClient] = useState(new QueryClient());
@@ -21,6 +23,9 @@ function App() {
                 <BrowserRouter>
                     <Routes>
                         <Route path={"/"} element={<RootPage />}></Route>
+                        <Route path={"/admin"} element={<AdminPage />}>
+                            <Route path={"user/:userId"} element={<UserInfoPage />}></Route>
+                        </Route>
                     </Routes>
                 </BrowserRouter>
             </MantineProvider>

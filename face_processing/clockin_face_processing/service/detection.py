@@ -5,9 +5,9 @@ import mimetypes
 import os.path
 import tempfile
 from http import HTTPStatus
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, Annotated
 
-from fastapi import UploadFile, HTTPException, File
+from fastapi import UploadFile, HTTPException, File, Depends
 from pathlib import Path
 
 import cv2
@@ -15,6 +15,7 @@ import cv2
 from sqlmodel import select
 from starlette.responses import FileResponse
 
+from .user import UserService
 from ..config import db_engine, get_db_session, get_uploads_root_path
 from deepface import DeepFace
 
@@ -35,9 +36,13 @@ class DetectionService:
     __FAST_DETECTOR_BACKEND = "opencv"
     __MIN_IMAGE_SIZES = {"h": 350, "w": 350}
     __PREFERRED_IMAGE_EXTENSION = "png"
+    __user_service: UserService
+
+    def __init__(self, user_service: Annotated[UserService, Depends(UserService)]):
+        self.__user_service = user_service
 
     def __get_face_image_path(self, user_id: int):
-        return f"{get_uploads_root_path()}/face_{user_id}.${self.__PREFERRED_IMAGE_EXTENSION}"
+        return f"{get_uploads_root_path()}/face_{user_id}.{self.__PREFERRED_IMAGE_EXTENSION}"
 
     def __validate_image_size(self, file_path: str):
         img = cv2.imread(file_path)
@@ -93,9 +98,13 @@ class DetectionService:
                 w = facial_area.get("w")
                 h = facial_area.get("h")
                 # Adds a outlined rectangle to the image
-                img_with_boxes = cv2.rectangle(img_with_boxes, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                img_with_boxes = cv2.rectangle(
+                    img_with_boxes, (x, y), (x + w, y + h), (0, 255, 0), 2
+                )
 
-            temp_save_bytes, temp_save_dest = tempfile.mkstemp(suffix=f".{self.__PREFERRED_IMAGE_EXTENSION}")
+            temp_save_bytes, temp_save_dest = tempfile.mkstemp(
+                suffix=f".{self.__PREFERRED_IMAGE_EXTENSION}"
+            )
 
             cv2.imwrite(temp_save_dest, img_with_boxes)
 
@@ -153,7 +162,10 @@ class DetectionService:
 
                 cv2.imwrite(save_path, img_with_box)
 
-    async def find_match(self, match_dto: FindDetectionMatchDto):
+    async def find_match(
+        self,
+        match_dto: FindDetectionMatchDto,
+    ):
         uploaded_file = match_dto.picture
         uploaded_face_representation = dict[str, Any]
         with tempfile.NamedTemporaryFile() as tf:
@@ -181,6 +193,9 @@ class DetectionService:
                 )
 
                 if verify.get("verified"):
+                    self.__user_service.register_user_verification(
+                        face_representation.user_id
+                    )
                     return face_representation
 
         raise HTTPException(

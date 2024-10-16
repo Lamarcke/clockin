@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import {AspectRatio, Box, Center} from "@mantine/core";
+import { AspectRatio, Box, Center } from "@mantine/core";
 
 interface Props {
     isDetectionPaused: boolean;
@@ -33,8 +33,8 @@ const FaceVideoFeed = ({ isDetectionPaused, detectFaces, detectionInterval }: Pr
             .getUserMedia({
                 video: {
                     facingMode: "user",
-                    height: 640,
-                    width: 960,
+                    height: 720,
+                    width: 1280,
                 },
             })
             .then((stream) => {
@@ -67,7 +67,7 @@ const FaceVideoFeed = ({ isDetectionPaused, detectFaces, detectionInterval }: Pr
                 style={{
                     maxHeight: "100%",
                     maxWidth: "100%",
-                    minWidth: "100%"
+                    minWidth: "100%",
                 }}
             />
         </Center>

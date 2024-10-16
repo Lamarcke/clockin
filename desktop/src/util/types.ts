@@ -1,3 +1,8 @@
-export interface DetectMatchResponse extends Object {
-    user_id: string
+export interface BaseModalChildrenProps {
+    onClose?: () => void;
+}
+
+export interface BaseModalProps {
+    opened: boolean;
+    onClose: () => void;
 }
